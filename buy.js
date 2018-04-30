@@ -18,7 +18,8 @@ Buy = async (argv) => {
     if (argv.amount && !argv.price) { // compute the price
       const lastPrice = (await getLatest(db, argv.exchangeName, 'lastPrices'))[symbol]
       // console.log('lastPrice', lastPrice)
-      argv.price = lastPrice * 1.2 // buy a fair bit above last price
+      argv.price = lastPrice * 1.01 // buy a fair bit above last price
+      console.log('no price given: buying at ' + argv.price);
     }
 
     const order = {
@@ -59,9 +60,6 @@ const opts = { // https://github.com/substack/minimist
 }
 const argv = require('minimist')(process.argv.slice(2), opts)
 // console.dir(argv)
-
-console.log(opts);
-return;
 
 if (!argv.coin) {
   console.error('No -c <coin> supplied')
