@@ -1,0 +1,19 @@
+{
+  "name": "autotrade",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:blockchain030/autotrade.git",
+  "author": "Eric van Riet Paap <ericvrp@gmail.com> and Marc Buma <mosbuma@bumos.nl>",
+  "license": "MIT License",
+  "dependencies": {
+    "babyparse": "^0.4.6",
+    "ccxt": "^1.13.1",
+    "chalk": "^2.4.0",
+    "coinmarketcap": "^0.2.0",
+    "minimist": "^1.2.0",
+    "mongodb": "^3.0.7",
+    "node-fetch": "^1.7.3",
+    "node-freegeoip": "0.0.1",
+    "wait-promise": "^0.4.1"
+  }
+}

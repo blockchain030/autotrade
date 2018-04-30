@@ -1,0 +1,6 @@
+{
+  "verbose": false,
+  "ignore": ["data/instructionList.json", "buy.js", "sell.js", "stats.js", "settings/testorders.js", "settings/Trade-settings-sample.js", ""],
+  "execMap": {
+  }
+}
