@@ -29,7 +29,7 @@ class traderbotDB{
   }
 }
 
-function getTradebot() {
+function getTradebotDB() {
   if (gTraderbotDB==null) {
     gTraderbotDB = new traderbotDB();
   }
@@ -46,7 +46,7 @@ function destroyTradebotDB() {
 }
 
 module.exports = {
-  getTradebot:getTradebot,
-  destroyTradebot:destroyTradebot,
+  getTradebotDB:getTradebotDB,
+  destroyTradebotDB:destroyTradebotDB,
   traderbotDB:traderbotDB
 }

@@ -35,7 +35,7 @@ Buy = async (argv) => {
     console.log(order)
     db.collection('orders').insertOne(order) // no need to await here
 
-    traderbotDB.destroyTradebot()
+    traderbotDB.destroyTradebotDB()
   } catch(ex) {
     console.error(ex);
   }

@@ -29,26 +29,6 @@ const MAX_INTERVAL = 1 * time.DAY
 const HUE_STEP = 17
 let hue = 0
 
-
-//
-class simulatedExchange{
-  constructor (tickerData) {
-    this.tickerData = tickerData;
-  }
-
-  async getLastPrice(exchange, fsym, tsym, ts=null) {
-    for(var i=0; i<this.tickerData.length; i++) {
-      if(this.tickerData[i].ts==ts) {
-        return this.tickerData[i]
-      }
-    }
-
-    return false;
-  }
-} // end of class simulatedExchange
-
-
-//
 function setIntervalAfterRandomTimeout(func, interval) {
   function _setInterval(func, interval) {
     // console.log('_setInterval', func, interval)
@@ -60,10 +40,8 @@ function setIntervalAfterRandomTimeout(func, interval) {
   setTimeout(_setInterval.bind(this, func, interval), timeout)
 }
 
-
-//
 class liveExchange {
-  constructor (botDB, exchangeName, secondsPerNewOrdersUpdate=1, secondsPerOrdersUpdate=10, secondsPerLastPricesUpdate=30, secondsPerBalancesUpdate=60) {
+  constructor (botDB, exchangeName) {
     this.chalkColor = chalk.hsl(hue, 100, 50)
     hue = (hue + HUE_STEP) % 360
 
@@ -82,7 +60,7 @@ class liveExchange {
     }
 
     if (this.exchange.hasFetchTickers) {
-      setIntervalAfterRandomTimeout(this.lastPricesUpdater.bind(this), secondsPerLastPricesUpdate * time.SECOND)
+      setIntervalAfterRandomTimeout(this.lastPricesUpdater.bind(this), settings.timing.secondsPerLastPricesUpdate * time.SECOND)
 
       if (this.exchange.hasFetchOHLCV && this.exchange.timeframes && !settings.buggyOHLCV.includes(this.exchangeName)) {
         // this.log(Object.keys(this.exchange.timeframes))
@@ -102,9 +80,9 @@ class liveExchange {
     }
 
     if (x && x.credentials) {
-      setIntervalAfterRandomTimeout(this.newOrdersUpdater.bind(this), secondsPerNewOrdersUpdate * time.SECOND)
-      setIntervalAfterRandomTimeout( this.balancesUpdater.bind(this), secondsPerBalancesUpdate  * time.SECOND)
-      // setIntervalAfterRandomTimeout(   this.ordersUpdater.bind(this), secondsPerOrdersUpdate    * time.SECOND)
+      setIntervalAfterRandomTimeout(this.newOrdersUpdater.bind(this), settings.timing.secondsPerNewOrdersUpdate * time.SECOND)
+      setIntervalAfterRandomTimeout(this.balancesUpdater.bind(this), settings.timing.secondsPerBalancesUpdate  * time.SECOND)
+      // setIntervalAfterRandomTimeout(   this.ordersUpdater.bind(this), settings.timing.secondsPerOrdersUpdate    * time.SECOND)
     }
   } // end of liveExchange.constructor()
 
@@ -120,8 +98,6 @@ class liveExchange {
     const apiDomain = apiUrl.split('//')[1].split('/')[0]
 
     if (!apiUrl) console.log(this.exchange)
-
-
 
     if (!this.exchangeNameToLocation)  this.exchangeNameToLocation = {}
 
@@ -687,6 +663,5 @@ class liveExchange {
 
 //
 module.exports = {
-  simulatedExchange : simulatedExchange,
   liveExchange : liveExchange
 }

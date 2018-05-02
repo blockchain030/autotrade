@@ -1,13 +1,23 @@
 const settings = {
     mongo: 'mongodb://localhost:27017/',
     initializeAll: false,
-    disabledExchanges: ['cryptopia'],
-    buggyOHLCV: ['bitfinex2', 'bitfinex', 'okex', 'acx', 'cex'],
+    disabledExchanges: [],
+    buggyOHLCV: ['kuna', 'bitfinex2', 'bitfinex', 'okex', 'acx', 'cex', 'btcbox', 'lbank', 'yobit', 'braziliex','livecoin', 'btcbox', 'ice3x'],
     sentiment: {
         solume: {
             comments: 'https://solume.io/SolumeAPI.pdf',
             url: 'https://api.solume.io/api/coins?auth=<token>',
         },
+    },
+    timing: {
+      // timing for display
+      secondsPerDisplayUpdate: 15,        // index.js - print balance frequency
+
+      // timing for processing
+      secondsPerNewOrdersUpdate: 1,       // scan new orders table frequency
+      secondsPerOrdersUpdate: 10,         // scan new orders table frequency
+      secondsPerLastPricesUpdate: 30,
+      secondsPerBalancesUpdate: 60
     },
     exchanges: {
         bitfinex: {
