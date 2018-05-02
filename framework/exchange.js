@@ -487,7 +487,7 @@ class liveExchange {
 
   // TODO: we could adjust trailingStopFactor based on the steepness and duration of the prior price increase so we react quicker when expect an agressive price correction
   async getTrailingStopFactor() {
-    return 0.97
+    return settings.autotrade.trailingStopFactor;
   }
 
   //
@@ -559,29 +559,31 @@ class liveExchange {
       this.log('Owning', total, fsym, btcValueString + usdValueString, isReserved)
       nOwnings++
 
-      // did the fsym/stableCoin symbol price drop significantly in price
-      const stableCoinSymbol = fsym + '/' + stableCoin
-      const highestPrice = coininfo[stableCoinSymbol] ? coininfo[stableCoinSymbol].highestPrice : undefined
-      const lastPrice = await this.getLastPrice(stableCoinSymbol)
+      if (settings.autotrade.autoSellOnTrailingStop) {
+        // did the fsym/stableCoin symbol price drop significantly in price
+        const stableCoinSymbol = fsym + '/' + stableCoin
+        const highestPrice = coininfo[stableCoinSymbol] ? coininfo[stableCoinSymbol].highestPrice : undefined
+        const lastPrice = await this.getLastPrice(stableCoinSymbol)
 
-      if (highestPrice && lastPrice && fsym !== stableCoin && free > 0) {
-        const factor = lastPrice / highestPrice
-        const trailingStopFactor = await this.getTrailingStopFactor()
-        // console.log(stableCoinSymbol, lastPrice, highestPrice, factor)
-        if (factor < trailingStopFactor) {
-          const order = {
-            symbol: stableCoinSymbol,
-            s: this.exchangeName,     // (s)ource
-            t: new Date().getTime(),  // (t)imestamp
-            type: 'sell',
-            status: 'new',
-          }
+        if (highestPrice && lastPrice && fsym !== stableCoin && free > 0) {
+          const factor = lastPrice / highestPrice
+          const trailingStopFactor = await this.getTrailingStopFactor()
+          // console.log(stableCoinSymbol, lastPrice, highestPrice, factor)
+          if (factor < trailingStopFactor) {
+            const order = {
+              symbol: stableCoinSymbol,
+              s: this.exchangeName,     // (s)ource
+              t: new Date().getTime(),  // (t)imestamp
+              type: 'sell',
+              status: 'new',
+            }
 
-          this.log('Sell all', stableCoinSymbol, 'because it dropped', (100-factor*100)+'% below highest price')
+            this.log('Sell all', stableCoinSymbol, 'because it dropped', (100-factor*100)+'% below highest price')
 
-          // console.log(order)
-          this.botDB.db.collection('orders').insertOne(order) // no need to await here
-        } // else don't sell because still close to highest price
+            // console.log(order)
+            this.botDB.db.collection('orders').insertOne(order) // no need to await here
+          } // else don't sell because still close to highest price
+        }
       } // next fsym
     } // next symbol
 

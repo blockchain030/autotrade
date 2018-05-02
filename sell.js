@@ -23,7 +23,7 @@ Sell = async (exchangeName, coin) => {
     console.log(order)
     db.collection('orders').insertOne(order) // no need to await here
 
-    traderbotDB.destroyTradebot()
+    traderbotDB.destroyTradebotDB()
   } catch(ex) {
     console.error(ex);
   }
@@ -45,10 +45,18 @@ const argv = require('minimist')(process.argv.slice(2), opts)
 
 if (!argv.coin) {
   console.error('No -c <coin> supplied')
+  console.log('');
+
+  console.log('sell.js - sells all <coin> at current market price')
+  console.log('options:')
+  console.log('--exchangeName -x xxxx (default poloniex)')
+  console.log('--coin/-c xxxxx')
+  console.log('');
+  console.log('example:')
+  console.log('  node sell.js --coin GNT')
 } else {
   // TODO: find exchangeName if none given
   Sell(argv.exchangeName, argv.coin)
 }
-
 
 // --- the end ---

@@ -3,12 +3,6 @@ const settings = {
     initializeAll: false,
     disabledExchanges: [],
     buggyOHLCV: ['kuna', 'bitfinex2', 'bitfinex', 'okex', 'acx', 'cex', 'btcbox', 'lbank', 'yobit', 'braziliex','livecoin', 'btcbox', 'ice3x'],
-    sentiment: {
-        solume: {
-            comments: 'https://solume.io/SolumeAPI.pdf',
-            url: 'https://api.solume.io/api/coins?auth=<token>',
-        },
-    },
     timing: {
       // timing for display
       secondsPerDisplayUpdate: 15,        // index.js - print balance frequency
@@ -18,6 +12,10 @@ const settings = {
       secondsPerOrdersUpdate: 10,         // scan new orders table frequency
       secondsPerLastPricesUpdate: 30,
       secondsPerBalancesUpdate: 60
+    },
+    autotrade: {
+      autoSellOnTrailingStop: false,
+      trailingStopFactor: 0.97
     },
     exchanges: {
         bitfinex: {

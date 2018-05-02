@@ -4,21 +4,16 @@ const ccxt = require('ccxt')
 
 const settings = require('./settings/Trade-settings.js')
 
-const instructionListFilename = './data/instructionList.json'
-
-const sentiment = require('./framework/sentiment.js');
 const exchange = require('./framework/exchange.js');
 const db = require('./framework/db.js');
-const fs = require('fs')
 
-liverun = async (secondsPerTotalsDisplay=5 * 60) => {
+liverun = async () => {
   async function totalsDisplay() {
     // console.log('totalsDisplay', liveExchanges.length)
     var totalInBTC = 0
     var totalInUSD = 0
 
     for (const liveExchange of liveExchanges) {
-      console.log('waiting for ' + liveExchange )
       const owning = await liveExchange.getOwning()
       totalInBTC += owning.inBTC
       totalInUSD += owning.inUSD
@@ -28,7 +23,7 @@ liverun = async (secondsPerTotalsDisplay=5 * 60) => {
       console.log('Owning total equivalent of', totalInBTC, 'BTC,', totalInUSD, 'USD')
     }
 
-    setTimeout(totalsDisplay, secondsPerTotalsDisplay * 1000)
+    setTimeout(totalsDisplay, settings.timing.secondsPerDisplayUpdate * 1000)
   } // end of totalsDisplay()
 
   let liveExchanges = []
@@ -36,8 +31,6 @@ liverun = async (secondsPerTotalsDisplay=5 * 60) => {
   try {
     const botDB = await db.getTradebotDB()
     await botDB.connect()
-
-//    sentiment.solume(botDB.db)
 
     const exchanges = settings.initializeAll ? ccxt.exchanges : Object.keys(settings.exchanges)
     const disabledExchanges = (settings.disabledExchanges || []).concat(['southxchange', 'yunbi', 'bter', 'tidex', 'jubi', 'bxinth', 'btcexchange', 'xbtce', 'bleutrade'])
@@ -90,7 +83,8 @@ test_mongo = async () => {
 
 const requiredMongo = 'mongodb://localhost:'
 if (settings.mongo.startsWith(requiredMongo)) {
-  liverun(settings.timing.secondsPerDisplayUpdate)
+  console.log('Welcome to autotrader')
+  liverun()
 } else {
   console.error('error: this scripts can only be run when settings.mongo starts with', requiredMongo)
 }

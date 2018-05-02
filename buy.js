@@ -14,12 +14,12 @@ Buy = async (argv) => {
     const exchange = settings.exchanges[argv.exchangeName]
     const symbol   = argv.coin + '/' + exchange.stableCoin
 
-    if (argv.amount && !argv.price) { // compute the price
-      const lastPrice = (await getLatest(db, argv.exchangeName, 'lastPrices'))[symbol]
-      // console.log('lastPrice', lastPrice)
-      argv.price = lastPrice * 1.01 // buy a fair bit above last price
-      console.log('no price given: buying at ' + argv.price);
-    }
+    // if (argv.amount && !argv.price) { // compute the price
+    //   const lastPrice = (await getLatest(db, argv.exchangeName, 'lastPrices'))[symbol]
+    //   // console.log('lastPrice', lastPrice)
+    //   argv.price = lastPrice * 1.01 // buy a fair bit above last price
+    //   console.log('no price given: buying at ' + argv.price);
+    // }
 
     const order = {
       symbol: symbol,
@@ -60,12 +60,27 @@ const opts = { // https://github.com/substack/minimist
 const argv = require('minimist')(process.argv.slice(2), opts)
 // console.dir(argv)
 
-if (!argv.coin) {
-  console.error('No -c <coin> supplied')
+if (!argv.coin||!argv.amount||!argv.price) {
+  if(!argv.coin) console.error('No --coin <coin> supplied')
+  if(!argv.amount) console.error('No --amount <amount> supplied')
+  if(!argv.price) console.error('No --price <price> supplied')
+  console.log('');
+
+  console.log('buy.js')
+  console.log('  place buy order with given characteristics')
+  console.log('options:')
+  console.log('--exchangeName -x xxxx (default poloniex)')
+  console.log('--coin/-c xxxxx ')
+  console.log('--amount/-n xxxxx (in target coin)')
+  console.log('--price/-p xxxx (in target coin)')
+//  console.log('--orderPrice/-o xxxx (in basecoin)')
+  console.log('');
+  console.log('example:')
+  console.log('  node buy.js --coin GNT --amount xxxx --price yyyy')
 } else {
-  // TODO: find exchangeName if none given
+  if (argv.exchangeName=='') argv.exchangeName='poloniex';
+
   Buy(argv)
 }
-
 
 // --- the end ---
