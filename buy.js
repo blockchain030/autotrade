@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 
 const settings  = require('./settings/Trade-settings.js')
-const traderbot = require('./framework/db.js')
-const ccxt      = require('ccxt')
+const traderbotDB = require('./framework/db.js')
 
 require('./tools/collection.js')
 
 Buy = async (argv) => {
   try {
-    const botDB = await traderbot.getTradebot()
+    const botDB = await traderbotDB.getTradebotDB()
     await botDB.connect()
     const db = botDB.db
 
@@ -36,7 +35,7 @@ Buy = async (argv) => {
     console.log(order)
     db.collection('orders').insertOne(order) // no need to await here
 
-    traderbot.destroyTradebot()
+    traderbotDB.destroyTradebot()
   } catch(ex) {
     console.error(ex);
   }

@@ -3,7 +3,6 @@ const Papa= require('babyparse')
 const ccxt = require('ccxt')
 
 const settings = require('./settings/Trade-settings.js')
-// console.log(settings)
 
 const instructionListFilename = './data/instructionList.json'
 
@@ -312,15 +311,13 @@ test_mongo = async () => {
   }
 }
 
-
 // test_mongo()
 
 const requiredMongo = 'mongodb://localhost:'
 if (settings.mongo.startsWith(requiredMongo)) {
-  liverun()
+  liverun(15)
 } else {
   console.error('error: this scripts can only be run when settings.mongo starts with', requiredMongo)
 }
-
 
 // --- the end ---

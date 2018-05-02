@@ -1,0 +1,10 @@
+// this are the poloniex settings that you can use to do trades during the workshop
+// please be careful because you are trading with real bitcoins
+
+poloniex: {
+    stableCoin: 'BTC',
+    credentials: {
+        apiKey: '<apiKey>',
+        secret: '<secret>',
+    },
+},

@@ -1,7 +1,7 @@
 const gMongoClient = require('mongodb').MongoClient; // http://mongodb.github.io/node-mongodb-native/3.0/
 const settings  = require('../settings/Trade-settings.js')
 
-var gTraderbot = null;
+var gTraderbotDB = null;
 
 class traderbotDB{
   constructor(mongo) {
@@ -22,35 +22,26 @@ class traderbotDB{
 
   async close() {
     if(this.mongo!=null) {
-      //  console.log('close mongo!');
        return await this.mongo.close();
     }
 
     return true;
   }
-
-  async testdb() {
-    var myobj = { name: "Company Inc", address: "Highway 37" };
-    // console.log(this.db, myobj);
-    return await this.db.collection("customers").insertOne(myobj);
-  }
 }
 
 function getTradebot() {
-  if (gTraderbot==null) {
-    // console.log('create new traderbotDB')
-    gTraderbot = new traderbotDB();
-    // gTraderbot.connect(); // note: this should be await...
+  if (gTraderbotDB==null) {
+    gTraderbotDB = new traderbotDB();
   }
 
-  return gTraderbot;
+  return gTraderbotDB;
 }
 
-function destroyTradebot() {
-  if (gTraderbot!=null) {
+function destroyTradebotDB() {
+  if (gTraderbotDB!=null) {
     // console.log('destroy traderbot');
-    gTraderbot.close();
-    gTraderbot = null;
+    gTraderbotDB.close();
+    gTraderbotDB = null;
   }
 }
 
