@@ -228,7 +228,7 @@ class liveExchange {
       const result = await this.exchange.createLimitBuyOrder(symbol, amount, price)
       const orderId = result.id
       if (!orderId) { // cryptopia?
-        log.info('exchange.createMarketBuyOrder', 'Market buy order filled immediately')
+        this.setStatus(orderId, 'done', 'exchange.createMarketBuyOrder. Market buy order filled immediately')
         return
       }
 
@@ -239,11 +239,11 @@ class liveExchange {
       try {
         const order = await this.exchange.fetchOrder(orderId, symbol)
         if (order.remaining <= 0) {
-          log.info('exchange.createMarketBuyOrder', 'Market buy order filled')
+          this.setStatus(orderId, 'done', 'exchange.createMarketBuyOrder. Market buy order filled')
           return
         }
       } catch (ex) {
-        log.info('exchange.createMarketBuyOrder', 'Assuming market buy order filled')
+        this.setStatus(orderId, 'done', 'exchange.createMarketBuyOrder. Assuming market buy order filled')
         return
       }
 
@@ -251,7 +251,7 @@ class liveExchange {
       await this.cancelOrder(orderId)
     } // next priceFactor
 
-    log.info('exchange.createMarketBuyOrder', 'Market buy order not filled')
+    this.setStatus(orderId, 'failed', 'exchange.createMarketBuyOrder. Market buy order not filled')
   } // end of buy()
 
   // Keep trying to sell for less and less money (simulate marketSell)
@@ -265,7 +265,7 @@ class liveExchange {
       const result = await this.exchange.createLimitSellOrder(symbol, amount, price)
       const orderId = result.id
       if (!orderId) { // cryptopia?
-        log.info('exchange.createMarketBuyOrder', 'Market sell order filled immediately')
+        this.setStatus(orderId, 'done', 'exchange.createMarketBuyOrder. Market sell order filled immediately')
         return
       }
 
@@ -276,11 +276,11 @@ class liveExchange {
       try {
         const order = await this.exchange.fetchOrder(orderId, symbol)
         if (order.remaining <= 0) {
-          log.info('exchange.createMarketBuyOrder', 'Market sell order filled')
+          this.setStatus(orderId, 'done', 'exchange.createMarketBuyOrder. Market sell order filled')
           return
         }
       } catch (ex) {
-        log.info('exchange.createMarketBuyOrder', 'Assuming market sell order filled')
+        this.setStatus(orderId, 'done', 'exchange.createMarketBuyOrder. Assuming market sell order filled')
         return
       }
 
@@ -288,7 +288,7 @@ class liveExchange {
       await this.cancelOrder(orderId)
     } // next priceFactor
 
-    log.info('exchange.createMarketBuyOrder', 'Market sell order not filled')
+    this.setStatus(orderId, 'failed', 'exchange.createMarketBuyOrder. Market sell order not filled')
   } // end of sell()
 
   //
@@ -688,16 +688,20 @@ class liveExchange {
     return output;
   } // end of getOrderList()
 
+  async setStatus(orderId, status, infoMessage=undefined) {
+    await this.botDB.db.collection('orders').updateOne({orderId: orderId}, {$set: {status: status}})
+    if (infoMessage) log.info(infoMessage)
+  }
+
   async cancelOrder(orderId) {
     // this.log('Cancel order', orderId)
     const cancelResult = await this.exchange.cancelOrder(orderId)
     if (cancelResult.Success || cancelResult.success || ['bitfinex'].includes(this.exchangeName)) {
-      this.log('Cancelled order', orderId)
+      await this.setStatus(orderId, 'canceled', 'Cancelled order ' + orderId)
     } else {
-      this.log('Cancel order', orderId, 'failed')
+      await this.setStatus(orderId, 'cancel-failed', 'Cancel order ' + orderId + ' failed')
       // console.log(cancelResult)
     }
-    await this.botDB.db.collection('orders').updateOne({orderId: orderId}, {$set: {status: 'canceled'}})
   }
 
   //
