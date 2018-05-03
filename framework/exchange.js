@@ -1,6 +1,7 @@
 // https://github.com/ccxt/ccxt/wiki/Manual
 // https://github.com/ccxt/ccxt#usage
 
+const ObjectId = require('mongodb').ObjectId;
 const settings = require('../settings/Trade-settings.js')
 const time     = require('../constants/time.js')
 const log = require("npmlog");
@@ -195,8 +196,8 @@ class liveExchange {
         const balances = await this.getBalances()
         const amount = balances.free[fsym]
         if (amount <= 0) {
-          if (balances.total[fsym] > 0) this.log(fsym, 'on exchange but not free to sell')
-          else                          this.log('No', fsym, 'on exchange available to sell')
+          if (balances.total[fsym] > 0) this.setStatus(orderid, 'failed', fsym + ' on exchange but not free to sell')
+          else                          this.setStatus(orderid, 'failed', 'No ' + fsym + ' on exchange available to sell')
           break
         }
         if (neworder.amount && neworder.price) {
@@ -204,7 +205,7 @@ class liveExchange {
           log.info('exchange.singleOrderUpdate', 'Limit sell %s %s at max %s', neworder.amount, neworder.symbol, neworder.price);
           await this.exchange.createLimitSellOrder(neworder.symbol, neworder.amount, neworder.price);
         } else {
-          await this.createMarketSellOrder(neworder.symbol, amount)
+          await this.createMarketSellOrder(neworder._id, neworder.symbol, amount)
         }
         break
 
@@ -267,7 +268,7 @@ class liveExchange {
   } // end of buy()
 
   // Keep trying to sell for less and less money (simulate marketSell)
-  async createMarketSellOrder(symbol, amount, secondsPerIteration=SECONDS_PER_SELL_ITERATION) {
+  async createMarketSellOrder(_id, symbol, amount, secondsPerIteration=SECONDS_PER_SELL_ITERATION) {
     for (let priceFactor = MIN_PRICE_FACTOR;priceFactor <= MAX_PRICE_FACTOR;priceFactor *= PRICE_FACTOR_FACTOR) {
       const lastPrice = await this.getLastPrice(symbol)
       const price = lastPrice / (1+priceFactor)
@@ -701,7 +702,7 @@ class liveExchange {
   } // end of getOrderList()
 
   async setStatus(orderId, status, infoMessage=undefined) {
-    await this.botDB.db.collection('orders').updateOne({orderId: orderId}, {$set: {status: status}})
+    await this.botDB.db.collection('orders').updateOne({$or: [{_id: ObjectId(orderId)}, {_id: orderId, orderId: orderId}]}, {$set: {status: status}})
     if (infoMessage) log.info(infoMessage)
   }
 
