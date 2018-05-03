@@ -1,8 +1,8 @@
 // https://github.com/ccxt/ccxt/wiki/Manual
 // https://github.com/ccxt/ccxt#usage
 
-const ObjectId = require('mongodb').ObjectId;
 const settings = require('../settings/Trade-settings.js')
+const ObjectId = require('mongodb').ObjectId;
 const time     = require('../constants/time.js')
 const log = require("npmlog");
 require('../tools/collection.js')
@@ -182,6 +182,8 @@ class liveExchange {
               exchangestatus = orderinfo.info.status;
           }
 
+          await this.setStatus(neworder._id, 'limit-buy-submitted')
+
           // {"info":{"timestamp":1525356725606,"status":"open","type":"limit","side":"buy","price":0.00004,"amount":4,"orderNumber":"46050891197","resultingTrades":[]},"id":"46050891197","timestamp":1525356725606,"datetime":"2018-05-03T14:12:05.606Z","status":"open","symbol":"GNT/BTC","type":"limit","side":"buy","price":0.00004,"cost":0,"amount":4,"filled":0,"remaining":4,"trades":[]}
 
         } else {
@@ -196,8 +198,8 @@ class liveExchange {
         const balances = await this.getBalances()
         const amount = balances.free[fsym]
         if (amount <= 0) {
-          if (balances.total[fsym] > 0) this.setStatus(orderid, 'failed', fsym + ' on exchange but not free to sell')
-          else                          this.setStatus(orderid, 'failed', 'No ' + fsym + ' on exchange available to sell')
+          if (balances.total[fsym] > 0) this.setStatus(neworder._id, 'failed', fsym + ' on exchange but not free to sell')
+          else                          this.setStatus(neworder._id, 'failed', 'No ' + fsym + ' on exchange available to sell')
           break
         }
         if (neworder.amount && neworder.price) {
