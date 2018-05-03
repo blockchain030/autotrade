@@ -22,33 +22,9 @@ const settings = {
       trailingStopFactor: 0.97
     },
     exchanges: {
-        bitfinex: {
-            stableCoin: 'BTC',
-            credentials: {
-                apiKey: '<apiKey>',
-                secret: '<secret>',
-            },
-        },
-        bittrex: {
-            stableCoin: 'ETH',
-            credentials: {
-                apiKey: '<apiKey>',
-                secret: '<secret>',
-            },
-        },
-        cryptopia: {
-            stableCoin: 'USDT',
-            credentials: {
-                apiKey: '<apiKey>',
-                secret: '<secret>',
-            },
-        },
-        poloniex: {
-            stableCoin: 'BTC',
-            credentials: {
-                apiKey: '<apiKey>',
-                secret: '<secret>',
-            },
+       
+
+        
         },
     }, // end of exchanges
 } // end of settings
