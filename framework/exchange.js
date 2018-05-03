@@ -172,9 +172,21 @@ class liveExchange {
         if (neworder.amount && neworder.price) {
           // this.log('Limit buy', neworder.amount, neworder.symbol, 'at max', neworder.price)
           log.info('exchange.singleOrderUpdate', 'Limit buy %s %s at max %s', neworder.amount, neworder.symbol, neworder.price);
-          await this.exchange.createLimitBuyOrder(neworder.symbol, neworder.amount, neworder.price)
+          var orderinfo = await this.exchange.createLimitBuyOrder(neworder.symbol, neworder.amount, neworder.price)
+          log.verbose('exchange.singleOrderUpdate', "%j", orderinfo);
+          var exchangeid = -1;
+          var exchangestatus = "";
+          if(orderinfo) {
+              exchangeid = orderinfo.info.ordernumber;
+              exchangestatus = orderinfo.info.status;
+          }
+
+          // {"info":{"timestamp":1525356725606,"status":"open","type":"limit","side":"buy","price":0.00004,"amount":4,"orderNumber":"46050891197","resultingTrades":[]},"id":"46050891197","timestamp":1525356725606,"datetime":"2018-05-03T14:12:05.606Z","status":"open","symbol":"GNT/BTC","type":"limit","side":"buy","price":0.00004,"cost":0,"amount":4,"filled":0,"remaining":4,"trades":[]}
+
         } else {
-          await this.createMarketBuyOrder(neworder.symbol, neworder.orderPrice)
+          // disabled for this demo
+          log.error('exchange.singleOrderUpdate', 'market buy orders are disabled for this demo')
+          // await this.createMarketBuyOrder(neworder.symbol, neworder.orderPrice)
         }
         break
 
@@ -224,7 +236,7 @@ class liveExchange {
       const price = lastPrice * (1 + priceFactor)
       const amount = orderPrice / price
 
-      log.info('exchange.createMarketBuyOrder', 'Market buy %s %s at %s [last: %s factor %s]', amount, symbol, price, lastprice, (1 + pricefactor));
+      log.info('exchange.createMarketBuyOrder', 'Market buy %s %s at %s [last: %s factor %s]', amount, symbol, price, lastPrice, (1 + priceFactor));
       const result = await this.exchange.createLimitBuyOrder(symbol, amount, price)
       const orderId = result.id
       if (!orderId) { // cryptopia?
@@ -261,11 +273,11 @@ class liveExchange {
       const price = lastPrice / (1+priceFactor)
 
       // this.log('Market sell', amount, symbol, 'at', price, ',', lastPrice, '/', 1+priceFactor)
-      log.info('exchange.createMarketBuyOrder', 'Market sell %s %s at %s [last: %s factor %s]', amount, symbol, price, lastprice, (1 + pricefactor));
+      log.info('exchange.createMarketSellOrder', 'Market sell %s %s at %s [last: %s factor %s]', amount, symbol, price, lastPrice, (1 + priceFactor));
       const result = await this.exchange.createLimitSellOrder(symbol, amount, price)
       const orderId = result.id
       if (!orderId) { // cryptopia?
-        log.info('exchange.createMarketBuyOrder', 'Market sell order filled immediately')
+        log.info('exchange.createMarketSellOrder', 'Market sell order filled immediately')
         return
       }
 
@@ -276,11 +288,11 @@ class liveExchange {
       try {
         const order = await this.exchange.fetchOrder(orderId, symbol)
         if (order.remaining <= 0) {
-          log.info('exchange.createMarketBuyOrder', 'Market sell order filled')
+          log.info('exchange.createMarketSellOrder', 'Market sell order filled')
           return
         }
       } catch (ex) {
-        log.info('exchange.createMarketBuyOrder', 'Assuming market sell order filled')
+        log.info('exchange.createMarketSellOrder', 'Assuming market sell order filled')
         return
       }
 
@@ -288,7 +300,7 @@ class liveExchange {
       await this.cancelOrder(orderId)
     } // next priceFactor
 
-    log.info('exchange.createMarketBuyOrder', 'Market sell order not filled')
+    log.info('exchange.createMarketSellOrder', 'Market sell order not filled')
   } // end of sell()
 
   //
