@@ -1,5 +1,6 @@
 const settings = {
     mongo: 'mongodb://localhost:27017/',
+    databasename: 'autotrader', // change to 'tradebot' database after importing historical data
     initializeAll: false,
     disabledExchanges: [],
     buggyOHLCV: ['kuna', 'bitfinex2', 'bitfinex', 'okex', 'acx', 'cex', 'btcbox', 'lbank', 'yobit', 'braziliex','livecoin', 'btcbox', 'ice3x'],

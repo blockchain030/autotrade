@@ -5,7 +5,7 @@ var gTraderbotDB = null;
 
 class traderbotDB{
   constructor(mongo) {
-    this.name = "autotrader"
+    this.name = settings.databasename;
     this.url = settings.mongo + this.name;
     this.db = null;
   }
