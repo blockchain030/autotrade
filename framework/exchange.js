@@ -3,6 +3,7 @@
 
 const settings = require('../settings/Trade-settings.js')
 const time     = require('../constants/time.js')
+const log = require("npmlog");
 require('../tools/collection.js')
 
 const ccxt  = require('ccxt')
@@ -93,7 +94,7 @@ class liveExchange {
   }
 
   //
-  _upsertStatus(what, attr) {
+  async _upsertStatus(what, attr) {
     const apiUrl    = this.exchange.urls.api.current || this.exchange.urls.api.public || this.exchange.urls.api.web || this.exchange.urls.api
     const apiDomain = apiUrl.split('//')[1].split('/')[0]
 
@@ -126,7 +127,7 @@ class liveExchange {
     }
 
     // this.log(JSON.stringify(status, null, 4))
-    /*await*/ this.botDB.db.collection('status').updateOne({s: this.exchangeName}, {$set: status}, {upsert: true})
+    await this.botDB.db.collection('status').updateOne({s: this.exchangeName}, {$set: status}, {upsert: true})
   }
 
   //
@@ -144,13 +145,13 @@ class liveExchange {
   }
 
   async singleOrderUpdate(orderid) {
-    this.log('single order update' + orderid);
+    log.verbose('exchange.singleOrderUpdate','checking order ' + orderid);
     const result = await this.botDB.db.collection('orders').findAndModify({_id: orderid, status: 'new'},[],{$set: {status: 'order-creation-in-progess'}}, {new:false})
                         // .catch((ex) => {
                         //   this.log('unable to update order status:', ex.message);
                         //   return false;
                         // });
-    this.log('* result:' + JSON.stringify(result, null, 4));
+//    this.log('* result:' + JSON.stringify(result, null, 4));
     if(!result||result.ok!=true||!result.value) {
       return false; // unexpected
     }
@@ -169,7 +170,8 @@ class liveExchange {
           }
         }
         if (neworder.amount && neworder.price) {
-          this.log('Limit buy', neworder.amount, neworder.symbol, 'at max', neworder.price)
+          // this.log('Limit buy', neworder.amount, neworder.symbol, 'at max', neworder.price)
+          log.info('exchange.singleOrderUpdate', 'Limit buy %s %s at max %s', neworder.amount, neworder.symbol, neworder.price);
           await this.exchange.createLimitBuyOrder(neworder.symbol, neworder.amount, neworder.price)
         } else {
           await this.createMarketBuyOrder(neworder.symbol, neworder.orderPrice)
@@ -186,7 +188,8 @@ class liveExchange {
           break
         }
         if (neworder.amount && neworder.price) {
-          this.log('Limit sell', neworder.amount, neworder.symbol, 'at max', neworder.price)
+          // this.log('Limit sell', neworder.amount, neworder.symbol, 'at max', neworder.price)
+          log.info('exchange.singleOrderUpdate', 'Limit sell %s %s at max %s', neworder.amount, neworder.symbol, neworder.price);
           await this.exchange.createLimitSellOrder(neworder.symbol, neworder.amount, neworder.price);
         } else {
           await this.createMarketSellOrder(neworder.symbol, amount)
@@ -221,11 +224,11 @@ class liveExchange {
       const price = lastPrice * (1 + priceFactor)
       const amount = orderPrice / price
 
-      this.log('Market buy', amount, symbol, 'at', price, ',', lastPrice, '*', 1+priceFactor)
+      log.info('exchange.createMarketBuyOrder', 'Market buy %s %s at %s [last: %s factor %s]', amount, symbol, price, lastprice, (1 + pricefactor));
       const result = await this.exchange.createLimitBuyOrder(symbol, amount, price)
       const orderId = result.id
       if (!orderId) { // cryptopia?
-        this.log('Market buy order filled immediately')
+        log.info('exchange.createMarketBuyOrder', 'Market buy order filled immediately')
         return
       }
 
@@ -236,11 +239,11 @@ class liveExchange {
       try {
         const order = await this.exchange.fetchOrder(orderId, symbol)
         if (order.remaining <= 0) {
-          this.log('Market buy order filled')
+          log.info('exchange.createMarketBuyOrder', 'Market buy order filled')
           return
         }
       } catch (ex) {
-        this.log('Assuming market buy order filled')
+        log.info('exchange.createMarketBuyOrder', 'Assuming market buy order filled')
         return
       }
 
@@ -248,7 +251,7 @@ class liveExchange {
       await this.cancelOrder(orderId)
     } // next priceFactor
 
-    this.log('Market buy order not filled')
+    log.info('exchange.createMarketBuyOrder', 'Market buy order not filled')
   } // end of buy()
 
   // Keep trying to sell for less and less money (simulate marketSell)
@@ -257,11 +260,12 @@ class liveExchange {
       const lastPrice = await this.getLastPrice(symbol)
       const price = lastPrice / (1+priceFactor)
 
-      this.log('Market sell', amount, symbol, 'at', price, ',', lastPrice, '/', 1+priceFactor)
+      // this.log('Market sell', amount, symbol, 'at', price, ',', lastPrice, '/', 1+priceFactor)
+      log.info('exchange.createMarketBuyOrder', 'Market sell %s %s at %s [last: %s factor %s]', amount, symbol, price, lastprice, (1 + pricefactor));
       const result = await this.exchange.createLimitSellOrder(symbol, amount, price)
       const orderId = result.id
       if (!orderId) { // cryptopia?
-        this.log('Market sell order filled immediately')
+        log.info('exchange.createMarketBuyOrder', 'Market sell order filled immediately')
         return
       }
 
@@ -272,11 +276,11 @@ class liveExchange {
       try {
         const order = await this.exchange.fetchOrder(orderId, symbol)
         if (order.remaining <= 0) {
-          this.log('Market sell order filled')
+          log.info('exchange.createMarketBuyOrder', 'Market sell order filled')
           return
         }
       } catch (ex) {
-        this.log('Assuming market sell order filled')
+        log.info('exchange.createMarketBuyOrder', 'Assuming market sell order filled')
         return
       }
 
@@ -284,7 +288,7 @@ class liveExchange {
       await this.cancelOrder(orderId)
     } // next priceFactor
 
-    this.log('Market sell order not filled')
+    log.info('exchange.createMarketBuyOrder', 'Market sell order not filled')
   } // end of sell()
 
   //
@@ -542,21 +546,27 @@ class liveExchange {
 
       const stableCoin = settings.exchanges[this.exchangeName].stableCoin
       let btcSymbol = fsym + '/BTC'
-      const lastPriceInBTC = await this.getLastPrice(btcSymbol)
-      let btcValueString = ''
-      if (lastPriceInBTC) {
-        const fees = DEFAULT_TAKER_FEE // because eventually we need to exchange to BTC
-        inBTC = total * lastPriceInBTC * fees
-        if (inBTC < MINIMAL_IN_BTC_VALUE) continue
-        this.owning.inBTC += inBTC
-        btcValueString = lastPriceInBTC ? '(' + inBTC + ' BTC) ' : ''
+      const lastPriceInBTC = btcSymbol==='BTC/BTC'?1.0:await this.getLastPrice(btcSymbol)
+
+      if (!lastPriceInBTC) {
+          log.verbose('exchange.balancesUpdater', "error - unable to retrieve last market price for %s on %s. Update aborted", fsym, this.exchangeName);
+          this.owning.inUSD = "??"
+          this.owning.inBTC = "??"
+          return false;
       }
-      if (fsym === 'BTC') this.owning.inBTC += total
+
+      const fees = DEFAULT_TAKER_FEE // because eventually we need to exchange to BTC
+      inBTC = total * lastPriceInBTC * fees
+      if (inBTC < MINIMAL_IN_BTC_VALUE) continue
+      this.owning.inBTC += inBTC
+      const btcValueString = inBTC + ' BTC'
+      const usdValueString = fsym === 'USDT' ? '' : inBTC*btc2usdt + ' USD'
 
       const free = this.balances.free[fsym] // while selling we still own a 'total' but have less 'free' available to trade
       const isReserved = free > 0 ? '' : '[reserved]'
-      const usdValueString = fsym === 'USDT' ? '' : '(' + inBTC*btc2usdt + ' USD)'
-      this.log('Owning', total, fsym, btcValueString + usdValueString, isReserved)
+
+      log.verbose('exchange.balancesUpdater', "[%s] %s: currently owning %s / %s %s", this.exchangeName, fsym, usdValueString, btcValueString, isReserved);
+
       nOwnings++
 
       if (settings.autotrade.autoSellOnTrailingStop) {
@@ -578,7 +588,8 @@ class liveExchange {
               status: 'new',
             }
 
-            this.log('Sell all', stableCoinSymbol, 'because it dropped', (100-factor*100)+'% below highest price')
+            // this.log('Sell all', stableCoinSymbol, 'because it dropped', (100-factor*100)+'% below highest price')
+            log.verbose('exchange.balancesUpdater', "[%s] selling all %s because it dropped %s % below highest price", this.exchangeName, stableCoinSymbol, (100-factor*100));
 
             // console.log(order)
             this.botDB.db.collection('orders').insertOne(order) // no need to await here
@@ -590,8 +601,11 @@ class liveExchange {
     this.owning.inUSD = this.owning.inBTC * btc2usdt
 
     if (nOwnings > 1) {
-      this.log('Owning equivalent of', this.owning.inBTC, 'BTC (' + this.owning.inUSD, 'USD)')
+      // this.log('Owning equivalent of', this.owning.inBTC, 'BTC (' + this.owning.inUSD, 'USD)')
+      log.verbose('exchange.balancesUpdater', '[%s] Current total balance is %s %s / %s %s', this.exchangeName, this.owning.inUSD, 'USD', this.owning.inBTC, 'BTC')
     }
+
+    return true;
   } // end of balancesUpdater()
 
   getOwning() {
@@ -625,6 +639,54 @@ class liveExchange {
   //     } // else don't expire
   //   } // next open order
   // } // end of ordersUpdater()
+
+  async getOrderList(includehistory=false) {
+    var filter = "";
+    if(!includehistory) {
+      filter = { $and: [{s: this.exchangeName}, {$or: [{status: 'new'}, {status: 'order-creation-in-progess'}]} ]} //
+    } else {
+      filter = {s: this.exchangeName}
+    }
+
+    var orders = await this.botDB.db.collection('orders').find(filter ).toArray();
+    var output = [];
+    for (const order of orders) {
+      var tmporder = {};
+      switch(order.type) {
+      case 'buy':
+        tmporder = {
+          id: order._id,
+          exchange: order.s,
+          timestamp: new Date(order.t),
+          description: order.type + ' ' + order.amount + ' ' + order.symbol + ' [price:' + order.price + ']',
+          status: order.status
+        }
+        break;
+      case 'sell':
+        tmporder = {
+          id: order._id,
+          exchange: order.s,
+          timestamp: new Date(order.t),
+          description: order.type + ' all ' + order.symbol,
+          status: order.status
+        }
+        break;
+      default:
+        tmporder = {
+          id: order._id,
+          exchange: order.s,
+          timestamp: new Date(order.t),
+          description: order.type + ' unknown order type ',
+          status: order.status
+        }
+        break;
+      }
+
+      output.push(tmporder)
+    }
+
+    return output;
+  } // end of getOrderList()
 
   async cancelOrder(orderId) {
     // this.log('Cancel order', orderId)

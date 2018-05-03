@@ -1,6 +1,7 @@
 const settings = {
     mongo: 'mongodb://localhost:27017/',
     databasename: 'autotrader', // change to 'tradebot' database after importing historical data
+    loglevel : 'verbose',          // verbose, info, error etc.
     initializeAll: false,
     disabledExchanges: [],
     buggyOHLCV: [
