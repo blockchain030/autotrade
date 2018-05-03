@@ -5,7 +5,7 @@ poloniex: {
     stableCoin: 'BTC',
     comments: 'Our playgroud account at poloniex',
     credentials: {
-         apiKey: 'U6VOLCYP-L54USE8Q-KO5210HK-J8T990QT',
-         secret: '5c3604c0321cbe8d71441e19bd36a3edaa629ee71a89784750c7b24a271722d0c46b5686dda8be257eed744c7469d6fbb7e05d2ae48bf2edb680499c5a28a3fe',
+        apiKey: 'I0PMVDPV-14N6QOLT-XYTAL77U-6SFOKYAT',
+        secret: '71c88b80d723ec07992b151f8d4c8d006d6cde655649ebda41b7fcd73e13014755209236490212136c7c77a3ddce534173ca5c9c4398b7803c6557c133cd526a',
     },
 },
