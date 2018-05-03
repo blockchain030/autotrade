@@ -42,19 +42,19 @@ liverun = async () => {
         console.log('skipping disabled exchange ', exchangeName)
         continue
       } else {
-        console.log('initializing ', exchangeName)
+        console.log('initializing', exchangeName)
       }
 
       const liveExchange = new exchange.liveExchange(botDB, exchangeName)
       if (!liveExchange.initialized) {
-        console.log('unable to initialize ' + exchangeName + ' (skipped)' );
+        console.log('unable to initialize', exchangeName, '(skipped)' );
         continue
       }
       liveExchanges.push(liveExchange)
       nInitializedExchanges++
     }
 
-    console.log(nInitializedExchanges + ' exchanges initialized')
+    console.log(nInitializedExchanges + ' exchange(s) initialized')
 
     totalsDisplay();
   } catch(ex) {

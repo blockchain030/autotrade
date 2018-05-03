@@ -2,7 +2,9 @@ const settings = {
     mongo: 'mongodb://localhost:27017/',
     initializeAll: false,
     disabledExchanges: [],
-    buggyOHLCV: ['kuna', 'bitfinex2', 'bitfinex', 'okex', 'acx', 'cex', 'btcbox', 'lbank', 'yobit', 'braziliex','livecoin', 'btcbox', 'ice3x'],
+    buggyOHLCV: [
+        'poloniex', // disable ohlcv queries just for the workshop to reduce workload
+        'kuna', 'bitfinex2', 'bitfinex', 'okex', 'acx', 'cex', 'btcbox', 'lbank', 'yobit', 'braziliex','livecoin', 'btcbox', 'ice3x'],
     timing: {
       // timing for display
       secondsPerDisplayUpdate: 15,        // index.js - print balance frequency
