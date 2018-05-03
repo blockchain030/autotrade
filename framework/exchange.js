@@ -2,7 +2,6 @@
 // https://github.com/ccxt/ccxt#usage
 
 const settings = require('../settings/Trade-settings.js')
-const ObjectId = require('mongodb').ObjectId;
 const time     = require('../constants/time.js')
 const log = require("npmlog");
 require('../tools/collection.js')
@@ -84,7 +83,7 @@ class liveExchange {
     if (x && x.credentials) {
       setIntervalAfterRandomTimeout(this.newOrdersUpdater.bind(this), settings.timing.secondsPerNewOrdersUpdate * time.SECOND)
       setIntervalAfterRandomTimeout(this.balancesUpdater.bind(this), settings.timing.secondsPerBalancesUpdate  * time.SECOND)
-      // setIntervalAfterRandomTimeout(   this.ordersUpdater.bind(this), settings.timing.secondsPerOrdersUpdate    * time.SECOND)
+      setIntervalAfterRandomTimeout(this.openOrdersUpdater.bind(this), settings.timing.secondsPerOrdersUpdate * time.SECOND)
     }
   } // end of liveExchange.constructor()
 
@@ -145,8 +144,8 @@ class liveExchange {
     /*await*/ this.botDB.db.collection('coininfo').updateOne({s: this.exchangeName, symbol: symbol}, {$set: coininfo}, {upsert: true})
   }
 
-  async singleOrderUpdate(orderid) {
-    log.verbose('exchange.singleOrderUpdate','checking order ' + orderid);
+  async singleNewOrderUpdate(orderid) {
+    log.verbose('exchange.singleNewOrderUpdate','checking order ' + orderid);
     const result = await this.botDB.db.collection('orders').findAndModify({_id: orderid, status: 'new'},[],{$set: {status: 'order-creation-in-progess'}}, {new:false})
                         // .catch((ex) => {
                         //   this.log('unable to update order status:', ex.message);
@@ -172,23 +171,19 @@ class liveExchange {
         }
         if (neworder.amount && neworder.price) {
           // this.log('Limit buy', neworder.amount, neworder.symbol, 'at max', neworder.price)
-          log.info('exchange.singleOrderUpdate', 'Limit buy %s %s at max %s', neworder.amount, neworder.symbol, neworder.price);
+          log.info('exchange.singleNewOrderUpdate', 'Limit buy %s %s at max %s', neworder.amount, neworder.symbol, neworder.price);
           var orderinfo = await this.exchange.createLimitBuyOrder(neworder.symbol, neworder.amount, neworder.price)
-          log.verbose('exchange.singleOrderUpdate', "%j", orderinfo);
-          var exchangeid = -1;
-          var exchangestatus = "";
-          if(orderinfo) {
-              exchangeid = orderinfo.info.ordernumber;
-              exchangestatus = orderinfo.info.status;
+          // log.verbose('exchange.singleNewOrderUpdate', "%j", orderinfo);
+          if(neworder.s=='poloniex'&&orderinfo) {
+              var newstatus = orderinfo.info.status=='open'?'open':'error'
+              await this.botDB.db.collection('orders').updateOne({_id: neworder._id}, {$set: {status: newstatus, orderId: orderinfo.info.orderNumber}})
           }
-
-          await this.setStatus(neworder._id, 'limit-buy-submitted')
 
           // {"info":{"timestamp":1525356725606,"status":"open","type":"limit","side":"buy","price":0.00004,"amount":4,"orderNumber":"46050891197","resultingTrades":[]},"id":"46050891197","timestamp":1525356725606,"datetime":"2018-05-03T14:12:05.606Z","status":"open","symbol":"GNT/BTC","type":"limit","side":"buy","price":0.00004,"cost":0,"amount":4,"filled":0,"remaining":4,"trades":[]}
 
         } else {
           // disabled for this demo
-          log.error('exchange.singleOrderUpdate', 'market buy orders are disabled for this demo')
+          log.error('exchange.singleNewOrderUpdate', 'market buy orders are disabled for this demo')
           // await this.createMarketBuyOrder(neworder.symbol, neworder.orderPrice)
         }
         break
@@ -198,16 +193,22 @@ class liveExchange {
         const balances = await this.getBalances()
         const amount = balances.free[fsym]
         if (amount <= 0) {
-          if (balances.total[fsym] > 0) this.setStatus(neworder._id, 'failed', fsym + ' on exchange but not free to sell')
-          else                          this.setStatus(neworder._id, 'failed', 'No ' + fsym + ' on exchange available to sell')
+          if (balances.total[fsym] > 0) this.log(fsym, 'on exchange but not free to sell')
+          else                          this.log('No', fsym, 'on exchange available to sell')
           break
         }
         if (neworder.amount && neworder.price) {
           // this.log('Limit sell', neworder.amount, neworder.symbol, 'at max', neworder.price)
-          log.info('exchange.singleOrderUpdate', 'Limit sell %s %s at max %s', neworder.amount, neworder.symbol, neworder.price);
-          await this.exchange.createLimitSellOrder(neworder.symbol, neworder.amount, neworder.price);
+          log.info('exchange.singleNewOrderUpdate', 'Limit sell %s %s at max %s', neworder.amount, neworder.symbol, neworder.price);
+          var orderinfo = await this.exchange.createLimitSellOrder(neworder.symbol, neworder.amount, neworder.price);
+          if(neworder.s=='poloniex'&&orderinfo) {
+              var newstatus = orderinfo.info.status=='open'?'open':'error'
+              await this.botDB.db.collection('orders').updateOne({_id: neworder._id}, {$set: {status: newstatus, orderId: orderinfo.info.orderNumber}})
+          }
         } else {
-          await this.createMarketSellOrder(neworder._id, neworder.symbol, amount)
+          // disabled for this demo
+          log.error('exchange.singleNewOrderUpdate', 'market sell orders are disabled for this demo')
+          // await this.createMarketSellOrder(neworder.symbol, amount)
         }
         break
 
@@ -226,7 +227,7 @@ class liveExchange {
     // this.log('start polling cycle');
     const neworders = await this.botDB.db.collection('orders').find({s: this.exchangeName, status: 'new'}).toArray();
     for (const neworder of neworders) {
-       this.singleOrderUpdate(neworder._id);
+       this.singleNewOrderUpdate(neworder._id);
     } // next neworder
   } // end of newOrdersUpdater()
 
@@ -270,7 +271,7 @@ class liveExchange {
   } // end of buy()
 
   // Keep trying to sell for less and less money (simulate marketSell)
-  async createMarketSellOrder(_id, symbol, amount, secondsPerIteration=SECONDS_PER_SELL_ITERATION) {
+  async createMarketSellOrder(symbol, amount, secondsPerIteration=SECONDS_PER_SELL_ITERATION) {
     for (let priceFactor = MIN_PRICE_FACTOR;priceFactor <= MAX_PRICE_FACTOR;priceFactor *= PRICE_FACTOR_FACTOR) {
       const lastPrice = await this.getLastPrice(symbol)
       const price = lastPrice / (1+priceFactor)
@@ -627,38 +628,28 @@ class liveExchange {
     return this.owning
   }
 
-  // do things like expire orders and create sell orders of bought coins
-  // async ordersUpdater() {
-  //   // this.log('ordersUpdater')
-
-  //   // Expire open orders when their time has come
-  //   const orders = await this.botDB.db.collection('orders').find({s: this.exchangeName, status: 'open'}).toArray()
-  //   for (const order of orders) {
-  //     // console.log('-----------------------------------------------------')
-  //     // console.log(order)
-
-  //     const now = new Date()
-
-  //     if (now.getTime() >= order.expirationTime) {
-  //       this.log('Order', order.orderId, 'expired. (might be filled in the meantime)')
-
-  //       try {
-  //         await this.botDB.db.collection('orders').updateOne({_id: order._id}, {$set: {status: 'expire-in-progress'}})
-  //         await this.cancelOrder(order.orderId)
-  //         await this.botDB.db.collection('orders').updateOne({_id: order._id}, {$set: {status: 'expired'}})
-  //         // this.log('Expired order', order.orderId, 'canceled')
-  //       } catch(ex) { // sometimes we get no sell confirmation
-  //         await this.botDB.db.collection('orders').updateOne({_id: order._id}, {$set: {status: 'was-canceled'}})
-  //         this.log('Expired order', order.orderId, 'was already canceled')
-  //       }
-  //     } // else don't expire
-  //   } // next open order
-  // } // end of ordersUpdater()
+  // process first available order
+  async openOrdersUpdater() {
+    // this.log('start polling cycle');
+    const openorders = await this.botDB.db.collection('orders').find({s: this.exchangeName, status: 'open'}).toArray();
+    for (const openorder of openorders) {
+        if(openorder.s=='poloniex'&&openorder.orderId) {
+          try {
+            const order = await this.exchange.fetchOrder(openorder.orderId, openorder.symbol)
+            if(order.status=='closed') {
+              this.setStatus(openorder.orderId, 'done', 'exchange.openOrdersUpdater. Order reported closed on exchange [' + openorder._id + ']')
+            }
+          } catch (ex) {
+            this.setStatus(openorder.orderId, 'done', 'exchange.openOrdersUpdater. Order not found on exchange: assuming order filled [' + openorder._id + ']')
+          }
+        }
+    } // next neworder
+  } // end of newOrdersUpdater()
 
   async getOrderList(includehistory=false) {
     var filter = "";
     if(!includehistory) {
-      filter = { $and: [{s: this.exchangeName}, {$or: [{status: 'new'}, {status: 'order-creation-in-progess'}]} ]} //
+      filter = { $and: [{s: this.exchangeName}, {$or: [{status: 'new'}, {status: 'order-creation-in-progess'}, {status: 'open'}]} ]} //
     } else {
       filter = {s: this.exchangeName}
     }
@@ -682,7 +673,7 @@ class liveExchange {
           id: order._id,
           exchange: order.s,
           timestamp: new Date(order.t),
-          description: order.type + ' all ' + order.symbol,
+          description: order.type + ' ' + order.amount + ' ' + order.symbol + ' [price:' + order.price + ']',
           status: order.status
         }
         break;
@@ -704,8 +695,8 @@ class liveExchange {
   } // end of getOrderList()
 
   async setStatus(orderId, status, infoMessage=undefined) {
-    await this.botDB.db.collection('orders').updateOne({$or: [{_id: ObjectId(orderId)}, {_id: orderId, orderId: orderId}]}, {$set: {status: status}})
-    if (infoMessage) log.info(infoMessage)
+    await this.botDB.db.collection('orders').updateOne({orderId: orderId}, {$set: {status: status}})
+    if (infoMessage) log.info('exchange.setStatus', infoMessage);
   }
 
   async cancelOrder(orderId) {

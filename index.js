@@ -35,7 +35,8 @@ liverun = async () => {
   async function ordersDisplay() {
     for (const liveExchange of liveExchanges) {
       try {
-        var orders = await liveExchange.getOrderList(false);
+        var showhistory = true;
+        var orders = await liveExchange.getOrderList(showhistory);
         for(const order of orders) {
           log.info('index.ordersDisplay','%s %s [%s] - %s [%s]', order.exchange, order.id, order.status, order.description, (new Date(order.timestamp)).toLocaleString());
         }
