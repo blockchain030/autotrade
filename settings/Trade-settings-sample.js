@@ -22,10 +22,38 @@ const settings = {
       trailingStopFactor: 0.97
     },
     exchanges: {
-       
-
-        
-        },
+      bittrex: {
+      //   stableCoin: 'ETH',
+      //   comments: 'uncomment if you want to change this exchange, fill in API keys',
+      //   credentials: {
+      //     apiKey: '<your key here>',
+      //     secret: '<your secret here>',
+      //   },
+      // },
+      // cryptopia: {
+      //   stableCoin: 'BTC',
+      //   comments: 'uncomment if you want to change this exchange, fill in API keys',
+      //   credentials: {
+      //     apiKey: '<your key here>',
+      //     secret: '<your secret here>',
+      //   },
+      // },
+      // poloniex: {
+      //   stableCoin: 'BTC',
+      //   comments: 'uncomment if you want to change this exchange, fill in API keys',
+      //   credentials: {
+      //     apiKey: '<your key here>',
+      //     secret: '<your secret here>',
+      //   },
+      // },
+      // poloniex: {
+      //   stableCoin: 'BTC',
+      //   comments: 'uncomment if you want to change this exchange, fill in API keys',
+      //   credentials: {
+      //     apiKey: '<your key here>',
+      //     secret: '<your secret here>',
+      //   },
+      // },
     }, // end of exchanges
 } // end of settings
 
